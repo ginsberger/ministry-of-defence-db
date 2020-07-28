@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Type
 import shutil
+import os
+from bson import BSON
+import bson
 
 import db_api
 
@@ -67,6 +70,31 @@ class DBTable(db_api.DBTable):
             with open(self.__MY_PATH + "_key_index.bson", "wb") as bson_file:
                 bson_file.write(BSON.encode(keys_dict))
 
+    def delete_record(self, key: Any) -> None:
+        path = self.__get_path_of_key(str(key))
+        if path is not None:
+            with open(path, "rb") as bson_file:
+                dict_ = bson.decode_all(bson_file.read())[0]
+                del dict_[str(key)]
+            with open(path, "wb") as bson_file:
+                bson_file.write(BSON.encode(dict_))
+
+            with open(self.__MY_PATH + "_key_index.bson", "rb") as bson_file:
+                keys_dict = bson.decode_all(bson_file.read())[0]
+                del keys_dict[str(key)]
+            with open(self.__MY_PATH + "_key_index.bson", "wb") as bson_file:
+                bson_file.write(BSON.encode(keys_dict))
+            self.__num_rows -= 1
+        else:
+            raise ValueError
+
+    def __get_path_of_key(self, key: Any) -> str:
+        with open(self.__MY_PATH + "_key_index.bson", "rb") as bson_file:
+            keys_dict = bson.decode_all(bson_file.read())
+            try:
+                return keys_dict[0][key]
+            except KeyError:
+                return None
 
 
 class DataBase(db_api.DataBase):
@@ -104,3 +132,13 @@ class DataBase(db_api.DataBase):
         except FileNotFoundError:
             print(f"Failed to delete table {table_name}")
 
+    def get_tables_names(self) -> List[Any]:
+        return list(DataBase.__TABLES.keys())
+
+    def query_multiple_tables(
+            self,
+            tables: List[str],
+            fields_and_values_list: List[List[SelectionCriteria]],
+            fields_to_join_by: List[str]
+    ) -> List[Dict[str, Any]]:
+        pass
