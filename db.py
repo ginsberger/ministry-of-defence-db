@@ -88,6 +88,25 @@ class DBTable(db_api.DBTable):
         else:
             raise ValueError
 
+    def get_record(self, key: Any) -> Dict[str, Any]:
+        path = self.__get_path_of_key(str(key))
+        if path is not None:
+            with open(path, "rb") as bson_file:
+                dict_ = bson.decode_all(bson_file.read())[0]
+                return dict_[str(key)]
+        return {}
+
+    def update_record(self, key: Any, values: Dict[str, Any]) -> None:
+        path = self.__get_path_of_key(str(key))
+        if path is not None:
+            with open(path, "rb") as bson_file:
+                dict_ = bson.decode_all(bson_file.read())[0]
+                dict_[str(key)].update(values)
+            with open(path, "wb") as bson_file:
+                bson_file.write(BSON.encode(dict_))
+        else:
+            print("the key is not exist")
+
     def __get_path_of_key(self, key: Any) -> str:
         with open(self.__MY_PATH + "_key_index.bson", "rb") as bson_file:
             keys_dict = bson.decode_all(bson_file.read())

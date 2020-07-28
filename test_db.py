@@ -3,10 +3,10 @@ import time
 from functools import partial
 from pathlib import Path
 from typing import Generator
-
+import shutil
 import pytest
 
-from db_api import DataBase
+from db import DataBase
 from db_api import DBField, SelectionCriteria, DB_ROOT, DBTable
 
 DB_BACKUP_ROOT = DB_ROOT.parent / (DB_ROOT.name + '_backup')
@@ -61,17 +61,18 @@ def new_db() -> Generator[DataBase, None, None]:
 def backup_db() -> Generator[Path, None, None]:
     yield DB_BACKUP_ROOT
 
-
 def test_reload_from_backup(backup_db: Path) -> None:
     """This test requires preparing the backup by calling create_db_backup()"""
     delete_files(DB_ROOT)
-    for path in backup_db.iterdir():
-        (DB_ROOT / path.name).write_bytes(path.read_bytes())
+    # for path in backup_db.iterdir():
+    #     (DB_ROOT / path.name).write_bytes(path.read_bytes())
+    DB_ROOT.rmdir()
+    shutil.copytree(str(backup_db), str(DB_ROOT))
     db = DataBase()
     assert db.num_tables() == 1
     assert db.get_tables_names() == ['Students']
     students = db.get_table('Students')
-    assert students.count() == 100
+    assert students.count() == 1000
 
 
 def test_create(new_db: DataBase) -> None:
@@ -145,3 +146,4 @@ def test_performance(new_db: DataBase) -> None:
 def test_bad_key(new_db: DataBase) -> None:
     with pytest.raises(ValueError):
         _ = new_db.create_table('Students', STUDENT_FIELDS, 'BAD_KEY')
+

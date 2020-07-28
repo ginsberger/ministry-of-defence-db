@@ -9,7 +9,7 @@ def create_db_backup() -> Path:
     DB_BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
     delete_files(DB_BACKUP_ROOT)
     db = DataBase()
-    create_students_table(db, 100)
+    create_students_table(db, 1000)
     for path in DB_ROOT.iterdir():
         path.rename(DB_BACKUP_ROOT / path.name)
     return DB_BACKUP_ROOT
