@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Type
-
+import shutil
 
 import db_api
 
@@ -97,4 +97,10 @@ class DataBase(db_api.DataBase):
     def get_table(self, table_name: str) -> DBTable:
         return DataBase.__TABLES[table_name]
 
+    def delete_table(self, table_name: str) -> None:
+        try:
+            shutil.rmtree(os.path.join(DataBase.__PATH, table_name))
+            del DataBase.__TABLES[table_name]
+        except FileNotFoundError:
+            print(f"Failed to delete table {table_name}")
 
