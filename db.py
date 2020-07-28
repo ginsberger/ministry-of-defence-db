@@ -90,3 +90,11 @@ class DataBase(db_api.DataBase):
         except FileExistsError:
             print(f"{table_name} is already exist")
             return DataBase.__TABLES[table_name]
+
+    def num_tables(self) -> int:
+        return len(DataBase.__TABLES)
+
+    def get_table(self, table_name: str) -> DBTable:
+        return DataBase.__TABLES[table_name]
+
+
