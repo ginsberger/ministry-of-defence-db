@@ -9,7 +9,6 @@ from operator import eq, ne, gt, lt, le, ge, is_, is_not
 
 import db_api
 
-
 operator_dict = {"<": lt, ">": gt, "=": eq, "!=": ne, "<=": le, ">=": ge, "is": is_, "is not": is_not}
 
 
