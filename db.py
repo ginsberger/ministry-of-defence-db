@@ -5,8 +5,12 @@ import shutil
 import os
 from bson import BSON
 import bson
+from operator import eq, ne, gt, lt, le, ge, is_, is_not
 
 import db_api
+
+
+operator_dict = {"<": lt, ">": gt, "=": eq, "!=": ne, "<=": le, ">=": ge, "is": is_, "is not": is_not}
 
 
 class DBField(db_api.DBField):
@@ -88,6 +92,29 @@ class DBTable(db_api.DBTable):
         else:
             raise ValueError
 
+    def delete_records(self, criteria: List[SelectionCriteria]) -> None:
+        # צריך לממש אופטימיזציות עם אינדקס
+        keys_to_delete = []
+        for i in range(self.__num_of_blocks):
+            with open(self.__MY_PATH + f"{i + 1}.bson", "rb") as bson_file:
+                dict_ = bson.decode_all(bson_file.read())[0]
+                for key in dict_.keys():
+                    if self.__is_meets_conditions(dict_[key], criteria):
+                        keys_to_delete.append(key)
+                for key in keys_to_delete:
+                    del dict_[str(key)]
+
+            with open(self.__MY_PATH + f"{i + 1}.bson", "wb") as bson_file:
+                bson_file.write(BSON.encode(dict_))
+
+        with open(self.__MY_PATH + "_key_index.bson", "rb") as bson_file:
+            keys_dict = bson.decode_all(bson_file.read())[0]
+            for key in keys_to_delete:
+                del keys_dict[key]
+                self.__num_rows -= 1
+        with open(self.__MY_PATH + "_key_index.bson", "wb") as bson_file:
+            bson_file.write(BSON.encode(keys_dict))
+
     def get_record(self, key: Any) -> Dict[str, Any]:
         path = self.__get_path_of_key(str(key))
         if path is not None:
@@ -114,6 +141,15 @@ class DBTable(db_api.DBTable):
                 return keys_dict[0][key]
             except KeyError:
                 return None
+
+    def __is_meets_conditions(self, item, criteria: List[SelectionCriteria]) -> bool:
+        for select in criteria:
+            first = item[select.field_name]
+            operator = select.operator
+            value = select.value
+            if not operator_dict[operator](first, value):
+                return False
+        return True
 
 
 class DataBase(db_api.DataBase):
