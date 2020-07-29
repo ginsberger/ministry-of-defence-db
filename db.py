@@ -134,6 +134,18 @@ class DBTable(db_api.DBTable):
         else:
             print("the key is not exist")
 
+    def query_table(self, criteria: List[SelectionCriteria]) -> List[Dict[str, Any]]:
+        # צריך לעשות אופטימיזציות
+        query_list = []
+        for i in range(self.__num_of_blocks):
+            with open(self.__MY_PATH + f"{i + 1}.bson", "rb") as bson_file:
+                dict_ = bson.decode_all(bson_file.read())[0]
+                for key in dict_.keys():
+                    if self.__is_meets_conditions(dict_[str(key)], criteria):
+                        query_list.append(dict_[str(key)])
+
+        return query_list
+
     def __get_path_of_key(self, key: Any) -> str:
         with open(self.__MY_PATH + "_key_index.bson", "rb") as bson_file:
             keys_dict = bson.decode_all(bson_file.read())
