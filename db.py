@@ -5,6 +5,7 @@ import shutil
 import os
 from bson import BSON
 import bson
+import pickle
 from operator import eq, ne, gt, lt, le, ge, is_, is_not
 
 import db_api
@@ -162,11 +163,30 @@ class DBTable(db_api.DBTable):
                 return False
         return True
 
+    def reload_backup(self):
+        try:
+            data = pickle.load(open(self.__INFO_PATH, "rb"))
+            self.__num_rows = data["num_rows"]
+            self.__num_of_blocks = data["num_of_blocks"]
+            # self.__my_path = data["path"]
+            self.__blocks_have_place = data["blocks_have_place"]
+            self.__indexes = data["indexes"]
+        except:
+            pass
 
 class DataBase(db_api.DataBase):
     __PATH = Path("db_files")
     __TABLES = dict()
     __BACKUP_PATH = Path("db_files_backup")
+
+    def __init__(self):
+        if not Path(f"{db_api.DB_ROOT}/DB.db").is_file():
+            pickle.dump(DataBase.__TABLES, open(os.path.join(db_api.DB_ROOT,"DB.db"), "wb"))
+
+        else:
+            DataBase.__TABLES = pickle.load(open(os.path.join(db_api.DB_ROOT, "DB.db"), "rb"))
+            for table in DataBase.__TABLES.values():
+                table.reload_backup()
 
     def create_table(self,
                      table_name: str,
